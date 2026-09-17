@@ -1,34 +1,31 @@
 from google import genai
 from django.conf import settings
 import time
-import random
 
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-def ask_gemini(message):
-    """Gemini AI with automatic retry."""
+SYSTEM_PROMPT = """
+You are Apun AI Assistant.
 
-    for attempt in range(5):   # 5 retries
+Rules:
+- Never mention Gemini, Google AI, model names or API.
+- Reply like a helpful human assistant.
+- Use Hindi + English naturally.
+- Give code inside code blocks.
+- Be friendly and professional.
+"""
+
+def ask_gemini(message):
+    for _ in range(3):
         try:
             response = client.models.generate_content(
                 model="gemini-2.5-flash-lite",
-                contents=message,
+                contents=f"{SYSTEM_PROMPT}\n\nUser: {message}"
             )
 
-            if response.text:
-                return response.text
+            return response.text
 
-            return "Sorry, I couldn't generate a response."
+        except Exception:
+            time.sleep(2)
 
-        except Exception as e:
-            error = str(e)
-
-            # Retry only for temporary server issues
-            if "503" in error or "UNAVAILABLE" in error:
-                wait = (2 ** attempt) + random.random()
-                time.sleep(wait)
-                continue
-
-            return f"Gemini Error: {error}"
-
-    return "⚠️ Gemini AI is busy right now. Please try again in a few seconds."
+    return "Sorry, I'm busy right now. Please try again in a few moments."
