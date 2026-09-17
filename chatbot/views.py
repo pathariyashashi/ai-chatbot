@@ -1,8 +1,10 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 from .gemini_service import ask_gemini
+from django.views.decorators.csrf import ensure_csrf_cookie
 import json
 
+@ensure_csrf_cookie
 def home(request):
     return render(request, "chatbot/index.html")
 
