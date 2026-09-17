@@ -10,8 +10,15 @@ def ask_gemini(message):
             contents=message
         )
 
-        return response.text
+        # Safe response
+        if hasattr(response, "text") and response.text:
+            return response.text
+
+        return "Sorry, I couldn't generate a response."
 
     except Exception as e:
-        print("AI ERROR:", e)  # Render Logs me error dikhega
-        return "Sorry, I'm unable to respond right now. Please try again later."
+        # Render logs me actual error print hoga
+        print("AI ERROR:", str(e))
+
+        # User ko generic message hi dikhe
+        return "Sorry! I'm unable to respond right now."
