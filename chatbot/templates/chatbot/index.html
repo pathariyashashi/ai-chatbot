@@ -1,0 +1,165 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Rule Based Chatbot</title>
+
+    <link rel="stylesheet" href="{% static 'chatbot/style.css' %}">
+
+</head>
+
+<body>
+
+    <div class="chat-container">
+
+        <div class="chat-header">
+            <h2>🤖 Rule-Based Chatbot</h2>
+        </div>
+
+        <div id="chat-box" class="chat-box">
+
+            <div class="message bot-message">
+                <strong>Bot:</strong>
+                Hello! How can I help you?
+            </div>
+
+        </div>
+
+        <div class="input-area">
+
+            <input
+                type="text"
+                id="message"
+                placeholder="Type your message..."
+            >
+
+            <button onclick="sendMessage()">
+                Send
+            </button>
+
+            <button onclick="clearChat()">
+                Clear Chat
+            </button>
+
+        </div>
+
+    </div>
+
+    <script>
+
+// CSRF Token Function (Django ke liye)
+function getCookie(name) {
+    let cookieValue = null;
+
+    if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+
+            if (cookie.startsWith(name + "=")) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+
+    return cookieValue;
+}
+
+const csrftoken = getCookie("csrftoken");
+
+// Send Message Function
+async function sendMessage() {
+
+    const input = document.getElementById("message");
+    const message = input.value.trim();
+
+    if (!message) return;
+
+    const chatBox = document.getElementById("chat-box");
+
+    // User Message
+    chatBox.innerHTML += `
+        <div class="message user-message">
+            <strong>You:</strong> ${message}
+        </div>
+    `;
+
+    input.value = "";
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    // Typing Animation
+    const typingId = "typing-" + Date.now();
+
+    chatBox.innerHTML += `
+        <div class="message bot-message" id="${typingId}">
+            <strong>Bot:</strong> <span>Typing...</span>
+        </div>
+    `;
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    try {
+
+        const response = await fetch("/chat/", {
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrftoken
+            },
+
+            body: JSON.stringify({
+                message: message
+            })
+        });
+
+        const data = await response.json();
+
+        document.getElementById(typingId).innerHTML = `
+            <strong>Bot:</strong> ${data.reply}
+        `;
+
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+    } catch (error) {
+
+        document.getElementById(typingId).innerHTML = `
+            <strong>Bot:</strong>
+            Sorry! Gemini server is not responding.
+        `;
+    }
+}
+
+// Clear Chat
+function clearChat() {
+
+    const chatBox = document.getElementById("chat-box");
+
+    chatBox.innerHTML = `
+        <div class="message bot-message">
+            <strong>Bot:</strong>
+            Hello! 👋 I'm Gemini AI Assistant. Ask me anything.
+        </div>
+    `;
+}
+
+// Enter Key Support
+document.getElementById("message").addEventListener("keydown", function(event) {
+
+    if (event.key === "Enter") {
+        event.preventDefault();
+        sendMessage();
+    }
+
+});
+
+</script>
+
+</body>
+
+</html>
